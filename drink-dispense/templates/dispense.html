@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Dispensing - Bartender Bot{% endblock %}
+
+{% block info %}
+  <h1>Dispensing: {{ drink_name }}</h1>
+  <h2>Please Wait</h2>
+  <form action="/">
+    <button type="submit" class="btn btn-success">Select New Drink</button>
+  </form>
+  <form action="/cancel">
+    <button type="submit" class="btn btn-danger">Cancel Drink</button>
+  </form><br>
+  In the meantime, check this song out:<br>
+  <iframe src="https://open.spotify.com/embed/track/1rcEtzR9Z07PvQBqUxhFcU" width="300" height="380" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>
+   
+{% endblock %}
+

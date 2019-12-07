@@ -1,16 +1,16 @@
 {% extends "base.html" %}
 {% import "bootstrap/wtf.html" as wtf %}
-{% block title %}Home Page - Bartender Bot{% endblock %}
+{% block title %}Custom Page - Bartender Bot{% endblock %}
 
 {% block info %}
-  <h1>Bartender Bot</h1>
-  <h2>What would you like to drink today?</h2>
-  
-  <form method="POST" action="/">
+  <h1>How Do You Want Your Drink?</h1>
+  {% if error|length > 0 %}
+  <p class="text-danger">{{ error }}</p><br>
+  {% endif %}
+  <form method="POST" action="/custom">
     <dl>
        {{ wtf.quick_form(form) }}
        <input class="btn btn-primary" type="submit" value="Dispense!">
-      
     </dl>
   </form>
 {% endblock %}
