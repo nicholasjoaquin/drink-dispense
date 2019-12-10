@@ -2,23 +2,25 @@ from flask import Flask, render_template, redirect, url_for, request
 from flask_bootstrap import Bootstrap
 from flask_wtf import FlaskForm
 from wtforms import RadioField, SubmitField, StringField, IntegerField
-from wtforms.validators import InputRequired, NumberRange
+from wtforms.validators import InputRequired, NumberRange, Length, Regexp
+from wtforms_validators import AlphaNumeric
+import serial
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'ThisDoesntMatter'
 Bootstrap(app)
-
+port = serial.Serial('/dev/ttyACM0', 9600)
 class DrinkSelectForm(FlaskForm):
-    drink = RadioField('', choices = [('Screwdriver~RECIPE','Screwdriver'),('Vodka Coke~RECIPE','Vodka Coke'),('CUSTOM','Custom Drink')], default = 'Screwdriver~RECIPE')
+    drink = RadioField('', choices = [('Screwdriver~!Screwdriver{5:10,1:2,}','Screwdriver'),('Vodka Coke~!Vodka Coke{6:10,3:2,}','Vodka Coke'),('CUSTOM','Custom Drink')], default = 'Screwdriver~!Screwdriver{5:10,1:2,}')
     # submit = SubmitField("Dispense!")
     
 class CustomSelectForm(FlaskForm):
-    name = StringField(u'Drink Name', validators=[InputRequired()])
-    drink1 = IntegerField(u'Pump 1 (oz.)', default = 0, validators=[NumberRange(min=0, max=12)])
-    drink2 = IntegerField(u'Pump 2 (oz.)', default = 0, validators=[NumberRange(min=0, max=12)])
-    drink3 = IntegerField(u'Pump 3 (oz.)', default = 0, validators=[NumberRange(min=0, max=12)])
-    drink4 = IntegerField(u'Pump 4 (oz.)', default = 0, validators=[NumberRange(min=0, max=12)])
-    drink5 = IntegerField(u'Pump 5 (oz.)', default = 0, validators=[NumberRange(min=0, max=12)])
-    drink6 = IntegerField(u'Pump 6 (oz.)', default = 0, validators=[NumberRange(min=0, max=12)])
+    name = StringField(u'Drink Name', validators=[InputRequired(), AlphaNumeric(), Length(min=1, max=127)])
+    drink1 = IntegerField(u'Water 1 (oz.)', default = 0, validators=[NumberRange(min=0, max=12)])
+    drink2 = IntegerField(u'Ginger Ale (oz.)', default = 0, validators=[NumberRange(min=0, max=12)])
+    drink3 = IntegerField(u'Water 2 (oz.)', default = 0, validators=[NumberRange(min=0, max=12)])
+    drink4 = IntegerField(u'Water 3 (oz.)', default = 0, validators=[NumberRange(min=0, max=12)])
+    drink5 = IntegerField(u'Sprite (oz.)', default = 0, validators=[NumberRange(min=0, max=12)])
+    drink6 = IntegerField(u'Coke (oz.)', default = 0, validators=[NumberRange(min=0, max=12)])
     
 
 @app.route("/", methods=['GET','POST'])
@@ -37,6 +39,9 @@ def index():
 def dispense():
     #dispense based on recipe
     drink_name = request.args.get('drink_name')
+    drink_recipe = request.args.get('drink_recipe')
+    print(drink_recipe)
+    port.write(drink_recipe.encode())
     return render_template("dispense.html", drink_name=drink_name)
 
 @app.route("/custom", methods=['GET','POST'])
@@ -51,10 +56,21 @@ def custom():
         oz5 = int(form.drink5.data)
         oz6 = int(form.drink6.data)
         oztotal = oz1+oz2+oz3+oz4+oz5+oz6
+        ozYeah = [oz1, oz2, oz3, oz4, oz5, oz6]
         if oztotal > 12:
-            return render_template("custom.html", form=form, error="TOTAL OZ MUST BE 12 OR LESS")
+            return render_template("custom.html", form=form, error="Total Oz must be less than 12oz")
+        elif oztotal < 1:
+            return render_template("custom.html", form=form, error="Total Oz must be greater than 0oz")
         else:
-            return redirect(url_for('dispense', drink_name=form.name.data, drink_recipe="RECIPE CALCULATION"))
+            recipe = "!" + str(form.name.data) + "{"
+            for index, ozNum in enumerate(ozYeah):
+                if ozNum > 0:
+                    recipe += str(index+1)
+                    recipe += ":"
+                    recipe += str(ozNum)
+                    recipe += ","
+            recipe += "}"
+            return redirect(url_for('dispense', drink_name=form.name.data, drink_recipe=recipe))
     return render_template("custom.html", form=form, error='')
 
 
